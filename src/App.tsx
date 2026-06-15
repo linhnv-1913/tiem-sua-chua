@@ -11,18 +11,21 @@ import OrdersTab from './features/orders/OrdersTab';
 import InventoryTab from './features/inventory/InventoryTab';
 import ExpensesTab from './features/expenses/ExpensesTab';
 import ReportsTab from './features/reports/ReportsTab';
+import { SyncManager } from './lib/SyncManager';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('orders');
 
   return (
     <AppProvider>
-      <AppLayout activeTab={activeTab} onTabChange={setActiveTab}>
-        {activeTab === 'orders' && <OrdersTab />}
-        {activeTab === 'inventory' && <InventoryTab />}
-        {activeTab === 'expenses' && <ExpensesTab />}
-        {activeTab === 'reports' && <ReportsTab />}
-      </AppLayout>
+      <SyncManager>
+        <AppLayout activeTab={activeTab} onTabChange={setActiveTab}>
+          {activeTab === 'orders' && <OrdersTab />}
+          {activeTab === 'inventory' && <InventoryTab />}
+          {activeTab === 'expenses' && <ExpensesTab />}
+          {activeTab === 'reports' && <ReportsTab />}
+        </AppLayout>
+      </SyncManager>
     </AppProvider>
   );
 }

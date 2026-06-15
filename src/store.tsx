@@ -25,6 +25,7 @@ interface AppContextType extends AppState {
   addExpense: (expense: Omit<Expense, 'id'>) => void;
   addOrder: (order: Omit<Order, 'id' | 'createdAt'>) => { success: boolean; error?: string };
   updateOrderStatus: (id: string, status: Order['status']) => void;
+  setFullState: (newState: Partial<AppState>) => void;
 }
 
 const defaultState: AppState = {
@@ -151,8 +152,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }));
   };
 
+  const setFullState = (newState: Partial<AppState>) => {
+    setState(s => ({ ...s, ...newState }));
+  };
+
   return (
-    <AppContext.Provider value={{ ...state, addFlavor, updateFlavorPrice, addInventory, setInventory, addExpense, addOrder, updateOrderStatus }}>
+    <AppContext.Provider value={{ ...state, addFlavor, updateFlavorPrice, addInventory, setInventory, addExpense, addOrder, updateOrderStatus, setFullState }}>
       {children}
     </AppContext.Provider>
   );
