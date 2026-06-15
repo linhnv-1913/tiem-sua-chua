@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAppStore } from '../../store';
 import { formatVND, safeDate } from '../../utils';
 import { Plus, Package, Clock, CheckCircle2, XCircle } from 'lucide-react';
@@ -11,6 +11,8 @@ export default function OrdersTab() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'delivered' | 'cancelled'>('all');
 
   // Form State
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -46,6 +48,9 @@ export default function OrdersTab() {
     
     if (Object.keys(orderItems).length === 0) {
       setErrorMsg('Vui lòng chọn ít nhất 1 món.');
+      setTimeout(() => {
+        errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
       return;
     }
 
@@ -66,6 +71,9 @@ export default function OrdersTab() {
 
     if (!result.success) {
       setErrorMsg(result.error || 'Lỗi không xác định khi tạo đơn');
+      setTimeout(() => {
+        errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
       return;
     }
 
@@ -178,9 +186,9 @@ export default function OrdersTab() {
             <h3 className="flex-1 text-xl font-black text-[#5C3D3D] text-center tracking-tight">Tạo đơn hàng mới</h3>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 bg-[#FFF9F0]">
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 bg-[#FFF9F0]">
              {errorMsg && (
-                <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-sm font-bold border border-red-100">
+                <div ref={errorRef} className="bg-red-50 text-red-600 p-4 rounded-2xl text-sm font-bold border border-red-100">
                   {errorMsg}
                 </div>
              )}
