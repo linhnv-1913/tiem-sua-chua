@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAppStore } from '../store';
-import { initAuth } from './auth';
 import { fetchStateFromCloud, syncStateToCloud } from './sync';
 
 export const SyncManager = ({ children }: { children: React.ReactNode }) => {
@@ -14,31 +13,29 @@ export const SyncManager = ({ children }: { children: React.ReactNode }) => {
   const prevStateRef = useRef<any>(null);
 
   useEffect(() => {
-    const unsubscribe = initAuth(
-      async (user) => {
-        setIsInitializing(false);
+    const initData = async () => {
+      try {
         setErrorMsg(null);
-        // On success, pull data down once
         if (isInitialLoad) {
           setIsSyncing(true);
           const cloudState = await fetchStateFromCloud();
           if (cloudState) {
-            // override local storage
             store.setFullState(cloudState);
           }
           setIsSyncing(false);
           setIsInitialLoad(false);
           prevStateRef.current = cloudState; // avoid triggering immediate sync back up
         }
-      },
-      () => {
-        setIsInitializing(false);
+      } catch (error) {
+        console.error(error);
         setErrorMsg('Không thể kết nối đến máy chủ lưu trữ (Firestore). Đang dùng bộ nhớ cục bộ.');
-        // Allow using local storage fallback without blocking
         setIsInitialLoad(false);
+      } finally {
+        setIsInitializing(false);
       }
-    );
-    return () => unsubscribe();
+    };
+
+    initData();
   }, [isInitialLoad]);
 
 

@@ -1,12 +1,9 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db, auth } from './auth';
+import { db } from './auth';
 
 export const syncStateToCloud = async (state: any) => {
   try {
-    const user = auth.currentUser;
-    if (!user) return;
-    
-    const docRef = doc(db, 'userStates', user.uid);
+    const docRef = doc(db, 'appState', 'global');
     await setDoc(docRef, { state: JSON.stringify(state), updatedAt: new Date().toISOString() });
     console.log('Synced to Firestore successfully.');
   } catch (err) {
@@ -16,10 +13,7 @@ export const syncStateToCloud = async (state: any) => {
 
 export const fetchStateFromCloud = async (): Promise<any> => {
   try {
-    const user = auth.currentUser;
-    if (!user) return null;
-    
-    const docRef = doc(db, 'userStates', user.uid);
+    const docRef = doc(db, 'appState', 'global');
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
