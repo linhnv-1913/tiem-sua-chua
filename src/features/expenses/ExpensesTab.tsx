@@ -96,6 +96,7 @@ export default function ExpensesTab() {
                 <label className="block text-sm font-bold text-[#5C3D3D] mb-2 uppercase tracking-wide">Ngày mua</label>
                 <input 
                   type="date"
+                  lang="en-GB"
                   required
                   className="w-full border-2 border-orange-100 rounded-2xl p-4 bg-white focus:border-orange-400 outline-none font-bold text-[#4A3732]"
                   value={date}

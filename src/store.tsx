@@ -112,7 +112,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const currentInventory = { ...state.inventory };
     const baseFlavors = state.flavors.filter(f => !f.isMix);
     
-    // Check stock requirements
+    // Check stock requirements and apply deduction
     for (const item of order.items) {
       const flavor = state.flavors.find(f => f.id === item.flavorId);
       if (!flavor) return { success: false, error: 'Không tìm thấy thông tin vị.' };
@@ -121,17 +121,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         // Mix = 1 of each base flavor per set
         for (const base of baseFlavors) {
           const needed = item.quantitySets * 1;
-          if ((currentInventory[base.id] || 0) < needed) {
-            return { success: false, error: `Không đủ sữa chua trong kho. Vị ${base.name} chỉ còn ${currentInventory[base.id] || 0} hũ. Vui lòng nhập thêm kho!` };
-          }
-          currentInventory[base.id] -= needed;
+          currentInventory[base.id] = (currentInventory[base.id] || 0) - needed;
         }
       } else {
         const needed = item.quantitySets * 5;
-        if ((currentInventory[flavor.id] || 0) < needed) {
-             return { success: false, error: `Không đủ sữa chua trong kho. Vị ${flavor.name} chỉ còn ${currentInventory[flavor.id] || 0} hũ. Vui lòng nhập thêm kho!` };
-        }
-        currentInventory[flavor.id] -= needed;
+        currentInventory[flavor.id] = (currentInventory[flavor.id] || 0) - needed;
       }
     }
 
@@ -146,10 +140,49 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateOrderStatus = (id: string, status: Order['status']) => {
-    setState(s => ({
-      ...s,
-      orders: s.orders.map(o => o.id === id ? { ...o, status } : o)
-    }));
+    setState(s => {
+      const order = s.orders.find(o => o.id === id);
+      if (!order || order.status === status) return s;
+
+      let newInventory = { ...s.inventory };
+      const baseFlavors = s.flavors.filter(f => !f.isMix);
+
+      if (status === 'cancelled') {
+        // Refund inventory
+        for (const item of order.items) {
+          const flavor = s.flavors.find(f => f.id === item.flavorId);
+          if (flavor) {
+            if (flavor.isMix) {
+              for (const base of baseFlavors) {
+                newInventory[base.id] = (newInventory[base.id] || 0) + item.quantitySets;
+              }
+            } else {
+              newInventory[flavor.id] = (newInventory[flavor.id] || 0) + item.quantitySets * 5;
+            }
+          }
+        }
+      } else if (order.status === 'cancelled') {
+        // Deduct inventory if uncancelling
+        for (const item of order.items) {
+          const flavor = s.flavors.find(f => f.id === item.flavorId);
+          if (flavor) {
+            if (flavor.isMix) {
+              for (const base of baseFlavors) {
+                newInventory[base.id] = (newInventory[base.id] || 0) - item.quantitySets;
+              }
+            } else {
+              newInventory[flavor.id] = (newInventory[flavor.id] || 0) - item.quantitySets * 5;
+            }
+          }
+        }
+      }
+
+      return {
+        ...s,
+        inventory: newInventory,
+        orders: s.orders.map(o => o.id === id ? { ...o, status } : o)
+      };
+    });
   };
 
   const setFullState = (newState: Partial<AppState>) => {

@@ -106,19 +106,24 @@ export default function OrdersTab() {
 
       <div className="flex shrink-0 gap-2 mb-4 bg-pink-50 p-1.5 rounded-2xl">
         {[
-          { id: 'all', label: 'Tất cả' },
-          { id: 'pending', label: 'Đang làm' },
-          { id: 'delivered', label: 'Hoàn thành' },
-          { id: 'cancelled', label: 'Đã huỷ' },
+          { id: 'all', label: 'Tất cả', count: orders.length },
+          { id: 'pending', label: 'Đang làm', count: orders.filter(o => o.status === 'pending').length },
+          { id: 'delivered', label: 'Hoàn thành', count: orders.filter(o => o.status === 'delivered').length },
+          { id: 'cancelled', label: 'Đã huỷ', count: orders.filter(o => o.status === 'cancelled').length },
         ].map(f => (
           <button
             key={f.id}
             onClick={() => setStatusFilter(f.id as any)}
-            className={`flex-1 py-1.5 px-0.5 text-center text-[11px] sm:text-xs font-bold rounded-xl transition-colors ${
+            className={`flex-1 flex flex-col items-center justify-center py-1.5 px-0.5 text-center text-[11px] sm:text-xs font-bold rounded-xl transition-colors ${
               statusFilter === f.id ? 'bg-white shadow-sm text-pink-500' : 'text-pink-400 hover:text-pink-500'
             }`}
           >
-            {f.label}
+            <span>{f.label}</span>
+            <span className={`text-[9px] px-1.5 py-0.5 mt-0.5 rounded-full leading-none ${
+              statusFilter === f.id ? 'bg-pink-100 text-pink-600' : 'bg-pink-100/50 text-pink-500'
+            }`}>
+              {f.count}
+            </span>
           </button>
         ))}
       </div>
@@ -200,7 +205,7 @@ export default function OrdersTab() {
                   <input type="tel" inputMode="tel" placeholder="Số điện thoại" required value={phone} onChange={e => setPhone(e.target.value)} className="w-full border-2 border-pink-100 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-0 focus:border-pink-400 outline-none font-medium placeholder-pink-200" />
                   <input type="text" placeholder="Địa chỉ giao hàng" required value={address} onChange={e => setAddress(e.target.value)} className="w-full border-2 border-pink-100 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-0 focus:border-pink-400 outline-none font-medium placeholder-pink-200" />
                   <div className="flex gap-3">
-                    <input type="date" required value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} className="flex-1 border-2 border-pink-100 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-0 focus:border-pink-400 outline-none font-medium text-[#4A3732]" />
+                    <input type="date" lang="en-GB" required value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} className="flex-1 border-2 border-pink-100 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-0 focus:border-pink-400 outline-none font-medium text-[#4A3732]" />
                     <input type="time" required value={deliveryTime} onChange={e => setDeliveryTime(e.target.value)} className="flex-1 border-2 border-pink-100 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-0 focus:border-pink-400 outline-none font-medium text-[#4A3732]" />
                   </div>
                 </div>

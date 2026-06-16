@@ -17,14 +17,14 @@ export default function InventoryTab() {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingFlavorId && qty >= 0) {
+    if (editingFlavorId) {
       setInventory(editingFlavorId, qty);
     }
     setEditingFlavorId(null);
   };
 
   const handleAdjust = (delta: number) => {
-    setQty(prev => Math.max(0, prev + delta));
+    setQty(prev => prev + delta);
   };
 
   return (
@@ -41,15 +41,27 @@ export default function InventoryTab() {
             <button 
               key={flavor.id} 
               onClick={() => handleCardClick(flavor.id, stock)}
-              className="bg-pink-50/50 p-5 rounded-3xl border-2 border-pink-100 flex flex-col items-center text-center outline-none active:scale-95 active:bg-pink-100/50 transition-all cursor-pointer shadow-sm"
+              className="bg-pink-50/50 p-5 rounded-3xl border-2 border-pink-100 flex flex-col items-center text-center outline-none active:scale-95 active:bg-pink-100/50 transition-all cursor-pointer shadow-sm relative overflow-hidden"
             >
-              <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-3">
-                <span className="text-3xl">{flavor.name.includes('Phô mai') ? '🧀' : flavor.name.includes('Matcha') ? '🍵' : flavor.name.includes('Khoai') ? '🍠' : flavor.name.includes('dừa') ? '🥥' : '🥛'}</span>
+              <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-3 text-3xl z-10">
+                {flavor.name.includes('Phô mai') ? '🧀' : flavor.name.includes('Matcha') ? '🍵' : flavor.name.includes('Khoai') ? '🍠' : flavor.name.includes('dừa') ? '🥥' : '🥛'}
               </div>
-              <h3 className="font-bold text-[#5C3D3D] text-sm mb-1">{flavor.name}</h3>
-              <p className={`text-2xl font-black ${stock < 5 ? 'text-red-500' : 'text-pink-500'}`}>
-                {stock} <span className="text-xs font-bold text-gray-400 uppercase">hũ</span>
-              </p>
+              <h3 className="font-bold text-[#5C3D3D] text-sm mb-1 z-10">{flavor.name}</h3>
+              
+              {stock < 0 ? (
+                <div className="flex flex-col items-center z-10">
+                   <p className="text-2xl font-black text-red-500">
+                     {Math.abs(stock)} <span className="text-xs font-bold uppercase">hũ</span>
+                   </p>
+                   <p className="text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full mt-1">CẦN LÀM THÊM</p>
+                </div>
+              ) : (
+                <p className={`text-2xl font-black z-10 ${stock === 0 ? 'text-gray-400' : 'text-pink-500'}`}>
+                  {stock} <span className="text-xs font-bold uppercase">hũ</span>
+                </p>
+              )}
+              
+              {stock < 0 && <div className="absolute inset-0 bg-red-50 z-0"></div>}
             </button>
           )
         })}
@@ -69,8 +81,6 @@ export default function InventoryTab() {
                  <div className="flex flex-col items-center w-24">
                    <input 
                      type="number"
-                     inputMode="numeric"
-                     min="0"
                      required
                      className="w-full text-center text-4xl font-black text-[#5C3D3D] outline-none bg-transparent"
                      value={qty}
