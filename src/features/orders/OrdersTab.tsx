@@ -90,7 +90,13 @@ export default function OrdersTab() {
   const filteredOrders = orders.filter(order => {
     if (statusFilter === 'all') return true;
     return order.status === statusFilter;
+  }).sort((a, b) => {
+    const timeA = new Date(a.deliveryDate).getTime();
+    const timeB = new Date(b.deliveryDate).getTime();
+    return (isNaN(timeA) ? 0 : timeA) - (isNaN(timeB) ? 0 : timeB);
   });
+
+  let lastDateStr = '';
 
   return (
     <div className="p-6 flex flex-col h-full bg-white relative">
@@ -106,10 +112,10 @@ export default function OrdersTab() {
 
       <div className="flex shrink-0 gap-2 mb-4 bg-pink-50 p-1.5 rounded-2xl">
         {[
-          { id: 'all', label: 'Tất cả', count: orders.length },
           { id: 'pending', label: 'Đang làm', count: orders.filter(o => o.status === 'pending').length },
           { id: 'delivered', label: 'Hoàn thành', count: orders.filter(o => o.status === 'delivered').length },
           { id: 'cancelled', label: 'Đã huỷ', count: orders.filter(o => o.status === 'cancelled').length },
+          { id: 'all', label: 'Tất cả', count: orders.length },
         ].map(f => (
           <button
             key={f.id}
@@ -135,9 +141,24 @@ export default function OrdersTab() {
              <p className="font-medium">Chưa có đơn hàng nào</p>
            </div>
         ) : (
-          filteredOrders.map(order => (
-            <div key={order.id} className={`bg-white border-2 border-pink-50 p-5 rounded-3xl flex flex-col gap-3 ${order.status === 'cancelled' ? 'opacity-60' : ''}`}>
-              <div className="flex justify-between items-start">
+          filteredOrders.map(order => {
+            const orderDateObj = safeDate(order.deliveryDate);
+            const isInvalid = isNaN(orderDateObj.getTime());
+            const dateStr = isInvalid ? 'Không xác định' : new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short' }).format(orderDateObj);
+            const showDivider = dateStr !== lastDateStr;
+            lastDateStr = dateStr;
+
+            return (
+              <React.Fragment key={order.id}>
+                {showDivider && (
+                  <div className="flex items-center gap-3 my-2 opacity-60">
+                    <div className="flex-1 h-px bg-pink-200"></div>
+                    <span className="text-xs font-bold text-pink-400">{dateStr}</span>
+                    <div className="flex-1 h-px bg-pink-200"></div>
+                  </div>
+                )}
+                <div className={`bg-white border-2 border-pink-50 p-5 rounded-3xl flex flex-col gap-3 ${order.status === 'cancelled' ? 'opacity-60' : ''}`}>
+                  <div className="flex justify-between items-start">
                 <div className="flex items-center gap-4">
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-sm ${order.status === 'delivered' ? 'bg-green-100 text-green-600' : order.status === 'cancelled' ? 'bg-gray-100 text-gray-500' : 'bg-yellow-100 text-yellow-600'}`}>
                     {order.status === 'delivered' ? '✅' : order.status === 'cancelled' ? '❌' : '🛵'}
@@ -181,7 +202,9 @@ export default function OrdersTab() {
                  </div>
               )}
             </div>
-          ))
+          </React.Fragment>
+          );
+        })
         )}
       </div>
 

@@ -17,7 +17,7 @@ export default function ExpensesTab() {
     if (!name || !amount || !date) return;
     addExpense({
       name,
-      amount: parseInt(amount, 10),
+      amount: parseInt(amount.replace(/\D/g, ''), 10),
       date
     });
     setName('');
@@ -82,14 +82,20 @@ export default function ExpensesTab() {
               <div>
                 <label className="block text-sm font-bold text-[#5C3D3D] mb-2 uppercase tracking-wide">Số tiền (VNĐ)</label>
                 <input 
-                  type="number"
+                  type="text"
                   inputMode="numeric"
-                  min="0"
                   required
-                  placeholder="Ví dụ: 150000"
+                  placeholder="Ví dụ: 150.000"
                   className="w-full border-2 border-orange-100 rounded-2xl p-4 bg-white focus:border-orange-400 outline-none font-bold text-[#4A3732] placeholder-orange-200"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e) => {
+                    const rawValue = e.target.value.replace(/\D/g, '');
+                    if (rawValue) {
+                      setAmount(parseInt(rawValue, 10).toLocaleString('vi-VN'));
+                    } else {
+                      setAmount('');
+                    }
+                  }}
                 />
               </div>
               <div>
