@@ -1,8 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { useAppStore } from '../../store';
 import { formatVND, safeDate } from '../../utils';
-import { Plus, Package, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Plus, Package, Clock, CheckCircle2, XCircle, Download, X } from 'lucide-react';
 import { OrderItem, Order } from '../../types';
+import { toPng } from 'html-to-image';
+
+import { qrBase64 } from './qrBase64';
 
 export default function OrdersTab() {
   const { orders, flavors, addOrder, updateOrder, updateOrderStatus } = useAppStore();
@@ -10,9 +13,11 @@ export default function OrdersTab() {
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'delivered' | 'cancelled'>('pending');
+  const [billOrder, setBillOrder] = useState<Order | null>(null);
 
   // Form State
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const billRef = useRef<HTMLDivElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
@@ -156,6 +161,19 @@ export default function OrdersTab() {
     setShowAdd(true);
   };
 
+  const downloadBill = async () => {
+    if (!billRef.current || !billOrder) return;
+    try {
+      const dataUrl = await toPng(billRef.current, { cacheBust: true, backgroundColor: '#FFF9F0' });
+      const link = document.createElement('a');
+      link.download = `Bill_${billOrder.customerName}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Lỗi xuất bill", err);
+    }
+  };
+
   const openForm = () => {
     setEditingOrderId(null);
     setCustomerName('');
@@ -297,6 +315,13 @@ export default function OrdersTab() {
                    </button>
                  </div>
               )}
+              {order.status === 'delivered' && (
+                 <div className="flex gap-2 justify-end mt-2">
+                   <button onClick={() => setBillOrder(order)} className="px-4 py-2 bg-pink-50 border border-pink-100 text-pink-600 font-bold text-xs rounded-xl active:bg-pink-100 flex items-center gap-1">
+                      <Download className="w-3 h-3" /> Xuất bill
+                   </button>
+                 </div>
+              )}
             </div>
           </React.Fragment>
           );
@@ -305,9 +330,12 @@ export default function OrdersTab() {
       </div>
 
       {showAdd && (
-        <div className="absolute inset-0 bg-white z-20 flex flex-col animate-in slide-in-from-bottom h-[100dvh] sm:h-full overflow-hidden sm:rounded-[2.5rem]">
-          <div className="flex items-center px-6 py-5 border-b-2 border-pink-50 bg-white shadow-sm">
+        <div className="absolute inset-0 bg-white z-[100] flex flex-col animate-in slide-in-from-bottom h-full overflow-hidden rounded-[2.5rem]">
+          <div className="flex items-center justify-between px-6 py-5 border-b-2 border-pink-50 bg-white shadow-sm relative shrink-0">
             <h3 className="flex-1 text-xl font-black text-[#5C3D3D] text-center tracking-tight">{editingOrderId ? 'Chỉnh sửa đơn hàng' : 'Tạo đơn hàng mới'}</h3>
+            <button title="Đóng" onClick={() => setShowAdd(false)} className="absolute right-6 p-2 text-gray-400 active:text-gray-500 hover:bg-gray-50 rounded-full transition-colors">
+              <X className="w-5 h-5" />
+            </button>
           </div>
           
           <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 bg-[#FFF9F0]">
@@ -343,7 +371,7 @@ export default function OrdersTab() {
                        <div key={flavor.id} className="flex items-center justify-between bg-white p-3 border-2 border-pink-50 rounded-xl shadow-sm">
                          <div>
                             <p className="font-bold text-[#5C3D3D] text-sm">{flavor.name}</p>
-                            <p className="text-pink-500 font-bold text-xs mt-0.5">{formatVND(flavor.price || 0)}/{flavor.isMix ? 'set' : 'hũ'}</p>
+                            <p className="text-pink-500 font-bold text-xs mt-0.5">{formatVND(flavor.price || (flavor.isMix ? 55000 : (flavor.id === 'f-phomai' ? 12000 : (flavor.id === 'f-truyenthong' ? 10000 : 11000))))}/{flavor.isMix ? 'set' : 'hũ'}</p>
                          </div>
                          <div className="flex items-center gap-3">
                             <button type="button" onClick={() => handleQtyChange(flavor.id, -1)} disabled={qty === 0} className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-lg shadow-sm transition ${qty === 0 ? 'bg-gray-50 text-gray-300' : 'bg-pink-100 text-pink-600 active:bg-pink-200'}`}>-</button>
@@ -392,6 +420,139 @@ export default function OrdersTab() {
             <div className="flex gap-3">
               <button type="button" onClick={() => setShowAdd(false)} className="px-5 py-3 text-sm text-pink-500 font-bold bg-pink-50 rounded-xl active:bg-pink-100 transition">Hủy</button>
               <button type="button" onClick={handleSaveOrder} className="flex-1 py-3 text-sm text-white font-bold bg-pink-400 rounded-xl shadow-lg shadow-pink-200 active:opacity-90 transition">Lưu Đơn Hàng</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {billOrder && (
+        <div className="absolute inset-0 z-[100] bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-[#FFF9F0] w-full max-w-[350px] rounded-[2rem] overflow-hidden flex flex-col max-h-full">
+            <div className="flex items-center justify-between px-6 py-4 border-b-2 border-pink-50 bg-white relative shrink-0">
+              <h3 className="flex-1 font-bold text-[#5C3D3D] text-center">Xuất Bill</h3>
+              <button title="Đóng" onClick={() => setBillOrder(null)} className="absolute right-4 p-2 text-gray-400 active:text-gray-500 hover:bg-gray-50 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center">
+              {/* This is the area we are going to capture */}
+              <div ref={billRef} className="bg-white p-6 w-full max-w-[300px] shadow-sm border border-gray-100 rounded-3xl flex flex-col items-center">
+                 <h2 className="font-black text-pink-500 text-xl tracking-tight mb-2 uppercase">Sữa Chua Vị Nhà</h2>
+                 <p className="text-xs text-gray-500 font-medium mb-6 text-center border-b border-dashed border-gray-200 pb-4 w-full">Thơm - Ngon - Béo - Mịn</p>
+                 
+                 <div className="w-full text-sm text-[#4A3732] space-y-2 mb-6">
+                   <p><span className="font-bold">Khách hàng:</span> {billOrder.customerName}</p>
+                   {billOrder.phone && (
+                      <p><span className="text-gray-500">{billOrder.phone}</span></p>
+                   )}
+                   <p className="text-xs mt-2 pt-2 border-t border-dashed border-gray-100 flex justify-between">
+                     <span className="font-bold">Món</span>
+                     <span className="font-bold">SL</span>
+                   </p>
+                   {billOrder.items.map((item: any) => {
+                     const f = flavors.find(f => f.id === item.flavorId);
+                     return (
+                        <div key={item.flavorId} className="flex justify-between text-xs">
+                          <span>{f?.name || 'Vị khác'}</span>
+                          <span className="font-bold">{item.quantity || item.quantitySets || 0}</span>
+                        </div>
+                     );
+                   })}
+                   {billOrder.giftItems && billOrder.giftItems.length > 0 && billOrder.giftItems.map((item: any) => {
+                     const f = flavors.find(f => f.id === item.flavorId);
+                     return (
+                        <div key={`gift-${item.flavorId}`} className="flex justify-between text-xs text-indigo-500">
+                          <span>🎁 Tặng {f?.name || 'Vị khác'}</span>
+                          <span className="font-bold">{item.quantity}</span>
+                        </div>
+                     );
+                   })}
+                   
+                   <div className="pt-2 mt-2 border-t border-dashed border-gray-100 space-y-1 text-right">
+                     {(() => {
+                       const bTotalJars = billOrder.items.reduce((sum: number, item: any) => {
+                         const f = flavors.find(flavor => flavor.id === item.flavorId);
+                         return sum + (item.quantity || item.quantitySets || 0) * (f?.isMix ? 5 : 1);
+                       }, 0);
+                       const shipFee = billOrder.shippingFee || 0;
+                        const subtotal = billOrder.items.reduce((sum: number, item: any) => {
+                          const f = flavors.find(flavor => flavor.id === item.flavorId);
+                          const price = f ? (f.price || (f.isMix ? 55000 : (f.id === 'f-phomai' ? 12000 : (f.id === 'f-truyenthong' ? 10000 : 11000)))) : 0;
+                          return sum + (item.quantity || item.quantitySets || 0) * price;
+                        }, 0);
+                        return (
+                          <>
+                            {billOrder.items.map((item: any, idx: number) => {
+                              const f = flavors.find(flavor => flavor.id === item.flavorId);
+                              const price = f ? (f.price || (f.isMix ? 55000 : (f.id === 'f-phomai' ? 12000 : (f.id === 'f-truyenthong' ? 10000 : 11000)))) : 0;
+                              return (
+                                <div key={`price-${idx}`} className="flex justify-between items-center text-[12px] font-medium text-gray-500 mb-1">
+                                  <span>Đơn giá{billOrder.items.length > 1 ? ` (${f?.name || ''})` : ''}</span>
+                                  <span>{formatVND(price)}</span>
+                                </div>
+                              );
+                            })}
+                            <div className="flex justify-between items-center text-[12px] font-medium text-gray-500 mb-1">
+                              <span>Tạm tính</span>
+                              <span>{formatVND(subtotal)}</span>
+                            </div>
+                           {bTotalJars >= 5 && bTotalJars < 10 && (
+                             <div className="flex justify-between items-center text-[11px] mb-1">
+                               <span className="font-medium text-gray-500">Ưu đãi</span>
+                               <span className="font-bold text-green-500">- 5.000đ (Mua 5 hũ)</span>
+                             </div>
+                           )}
+                           {bTotalJars >= 10 && !(bTotalJars >= 20 && shipFee > 0) && (
+                             <div className="flex justify-between items-center text-[11px] mb-1">
+                               <span className="font-medium text-gray-500">Ưu đãi</span>
+                               <span className="font-bold text-indigo-500">🎁 Tặng 1 hũ (Mua 10 hũ)</span>
+                             </div>
+                           )}
+                           {bTotalJars >= 20 && (
+                             <div className="flex justify-between items-center text-[11px] mb-1">
+                               <span className="font-medium text-gray-500">Ưu đãi</span>
+                               <span className="font-bold text-blue-500">🚚 Freeship (Mua 20 hũ)</span>
+                             </div>
+                           )}
+                           {bTotalJars < 20 && shipFee > 0 && (
+                             <div className="flex justify-between items-center text-[11px] mb-1">
+                               <span className="font-medium text-gray-500">Phí ship</span>
+                               <span className="font-bold text-gray-500">{formatVND(shipFee)}</span>
+                             </div>
+                           )}
+                           {bTotalJars >= 20 && shipFee > 0 && (
+                             <div className="flex justify-between items-center text-[11px] mb-1">
+                               <span className="font-medium text-gray-500">Phí ship</span>
+                               <span className="font-bold text-gray-400 line-through decoration-gray-400">{formatVND(shipFee)}</span>
+                             </div>
+                           )}
+                         </>
+                       );
+                     })()}
+                     <div className="flex justify-between items-center mt-2 pt-1 border-t border-dashed border-gray-100">
+                       <span className="font-bold text-pink-400 text-sm">Tổng tiền</span>
+                       <span className="text-lg font-black text-pink-500">{formatVND(billOrder.totalPrice)}</span>
+                     </div>
+                   </div>
+                 </div>
+
+                 {/* QR Code Section */}
+                 <div className="flex flex-col items-center pt-4 border-t border-dashed border-gray-200 w-full">
+                    <img 
+                      src={qrBase64} 
+                      alt="QR Code" 
+                      className="w-40 h-40 object-contain rounded-xl mix-blend-multiply" 
+                    />
+                    <p className="text-[10px] font-bold text-gray-400 mt-2 tracking-wide uppercase text-center w-full break-normal">TRAN LE THI HOANG NI</p>
+                 </div>
+                 <p className="text-[10px] font-medium text-pink-300 mt-4 text-center">Cảm ơn bạn đã tin tưởng và ủng hộ 💕</p>
+              </div>
+            </div>
+            <div className="p-4 bg-white border-t-2 border-pink-50 text-center">
+              <button type="button" onClick={downloadBill} className="w-full py-3 text-sm text-white font-bold bg-pink-500 hover:bg-pink-600 rounded-xl shadow-lg shadow-pink-200 active:opacity-90 transition flex items-center justify-center gap-2">
+                <Download className="w-4 h-4" /> Tải về ảnh
+              </button>
             </div>
           </div>
         </div>
