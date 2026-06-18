@@ -1,7 +1,7 @@
 export interface Flavor {
   id: string;
   name: string;
-  pricePerSet: number;
+  price: number;
   isMix?: boolean;
 }
 
@@ -18,7 +18,7 @@ export interface Expense {
 
 export interface OrderItem {
   flavorId: string;
-  quantitySets: number;
+  quantity: number;
 }
 
 export interface Order {
@@ -28,8 +28,10 @@ export interface Order {
   address: string;
   deliveryDate: string; // ISO string
   totalPrice: number;
+  shippingFee?: number;
   status: 'pending' | 'delivered' | 'cancelled';
   items: OrderItem[];
+  giftItems?: OrderItem[];
   createdAt: string; // ISO string
 }
 
