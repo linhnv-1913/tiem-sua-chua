@@ -8,7 +8,7 @@ import { toPng } from 'html-to-image';
 import { qrBase64 } from './qrBase64';
 
 export default function OrdersTab() {
-  const { orders, flavors, addOrder, updateOrder, updateOrderStatus } = useAppStore();
+  const { orders, flavors, addOrder, updateOrder, updateOrderStatus, markOrderBilled } = useAppStore();
   const [showAdd, setShowAdd] = useState(false);
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -107,7 +107,8 @@ export default function OrdersTab() {
       deliveryDate: `${deliveryDate}T${deliveryTime || '00:00'}`,
       totalPrice: calculateTotal(),
       items,
-      giftItems
+      giftItems,
+      isBilled: false
     };
 
     let result;
@@ -169,6 +170,12 @@ export default function OrdersTab() {
       link.download = `Bill_${billOrder.customerName}.png`;
       link.href = dataUrl;
       link.click();
+      
+      if (billOrder.status === 'delivered') {
+        markOrderBilled(billOrder.id);
+        // Also update local state so the view updates without needing to close and open again, or it closes when we download? Usually let it stay open
+        setBillOrder({ ...billOrder, isBilled: true });
+      }
     } catch (err) {
       console.error("Lỗi xuất bill", err);
     }
@@ -278,7 +285,7 @@ export default function OrdersTab() {
                      order.status === 'cancelled' ? 'bg-gray-100 text-gray-500' :
                      'bg-blue-100 text-blue-600'
                   }`}>
-                    {order.status === 'delivered' ? 'Hoàn thành' : order.status === 'cancelled' ? 'Đã huỷ' : 'Đang làm'}
+                    {order.status === 'delivered' ? (order.isBilled ? 'Đã xuất bill' : 'Hoàn thành') : order.status === 'cancelled' ? 'Đã huỷ' : 'Đang làm'}
                   </span>
                   <p className="font-black text-pink-500">{formatVND(order.totalPrice)}</p>
                 </div>
@@ -318,7 +325,7 @@ export default function OrdersTab() {
               {order.status === 'delivered' && (
                  <div className="flex gap-2 justify-end mt-2">
                    <button onClick={() => setBillOrder(order)} className="px-4 py-2 bg-pink-50 border border-pink-100 text-pink-600 font-bold text-xs rounded-xl active:bg-pink-100 flex items-center gap-1">
-                      <Download className="w-3 h-3" /> Xuất bill
+                      <Download className="w-3 h-3" /> {order.isBilled ? 'Xuất bill lại' : 'Xuất bill'}
                    </button>
                  </div>
               )}

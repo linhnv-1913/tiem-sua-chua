@@ -30,6 +30,7 @@ export interface Order {
   totalPrice: number;
   shippingFee?: number;
   status: 'pending' | 'delivered' | 'cancelled';
+  isBilled?: boolean;
   items: OrderItem[];
   giftItems?: OrderItem[];
   createdAt: string; // ISO string

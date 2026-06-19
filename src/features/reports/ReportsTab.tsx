@@ -24,10 +24,7 @@ export default function ReportsTab() {
     }
 
     const filteredOrders = orders.filter(o => {
-      // Logic for reports: Should it count only "delivered"? 
-      // User says: (Có thể thiết lập chỉ tính đơn "Đã giao"). Let's count only delivered or pending if needed, but 'delivered' makes more sense for profit.
-      // Let's count all non-cancelled for now, or just follow spec exactly. 'Chỉ tính đơn Đã giao' is better for actual profit.
-      if (o.status === 'cancelled') return false; 
+      if (o.status !== 'delivered') return false; 
       const d = safeDate(o.createdAt);
       return isWithinInterval(d, interval);
     });
