@@ -544,16 +544,46 @@ export default function OrdersTab() {
                    </div>
                  </div>
 
-                 {/* QR Code Section */}
-                 <div className="flex flex-col items-center pt-4 border-t border-dashed border-gray-200 w-full">
-                    <img 
-                      src={qrBase64} 
-                      alt="QR Code" 
-                      className="w-40 h-40 object-contain rounded-xl mix-blend-multiply" 
-                    />
-                    <p className="text-[10px] font-bold text-gray-400 mt-2 tracking-wide uppercase text-center w-full break-normal">TRAN LE THI HOANG NI</p>
+                 {/* QR Code Layout Match */}
+                 <div className="mt-5 w-full max-w-[240px] mx-auto rounded-[20px] bg-gradient-to-br from-[#7e7cdc] via-[#ad60db] to-[#d03fe1] p-[4px] shadow-sm">
+                   <div className="bg-gradient-to-br from-[#e9ecf8] to-[#f4dcf4] rounded-[16px] flex flex-col pt-5 pb-6 relative overflow-hidden">
+                     {/* QR Code */}
+                     <div className="mx-[18px] bg-white rounded-xl p-[12px] flex items-center justify-center shadow-[0_2px_10px_rgba(0,0,0,0.05)]">
+                       <img 
+                         src={qrBase64} 
+                         alt="QR Code" 
+                         className="w-[140px] h-[140px] object-contain mix-blend-multiply" 
+                       />
+                     </div>
+                     
+                     {/* Logos */}
+                     <div className="flex items-center justify-between px-6 mt-4 mb-4">
+                       <div className="flex items-center font-black text-[12px] tracking-tighter">
+                         <span className="text-[#db3131] text-[16px] mr-[1px]">V</span>
+                         <span className="text-[#202773] mt-[2px]">IETQR</span>
+                       </div>
+                       <div className="flex items-center font-bold text-[12px] italic tracking-tight">
+                         <span className="text-[#212776]">napas</span>
+                         <span className="text-[#9fc73b] ml-1">247</span>
+                       </div>
+                     </div>
+
+                     {/* Cutout Separator */}
+                     <div className="relative flex items-center justify-center w-full h-[2px] my-1">
+                        <div className="absolute left-[-10px] w-[20px] h-[20px] bg-[#986adc] rounded-full"></div>
+                        <div className="w-full border-t-[1.5px] border-dashed border-[#cdbbdf] mx-[14px]"></div>
+                        <div className="absolute right-[-10px] w-[20px] h-[20px] bg-[#ca46e0] rounded-full"></div>
+                     </div>
+
+                     {/* Account Info */}
+                     <div className="px-4 pt-5 flex flex-col items-center">
+                       <p className="text-[12px] font-medium text-gray-800 tracking-wide uppercase mb-1">TRAN LE THI HOANG NI</p>
+                       <p className="text-[14px] font-medium text-gray-900">0041000366292</p>
+                     </div>
+                   </div>
                  </div>
-                 <p className="text-[10px] font-medium text-pink-300 mt-4 text-center">Cảm ơn bạn đã tin tưởng và ủng hộ 💕</p>
+
+                 <p className="text-[10px] font-medium text-pink-300 mt-5 text-center">Cảm ơn bạn đã tin tưởng và ủng hộ 💕</p>
               </div>
             </div>
             <div className="p-4 bg-white border-t-2 border-pink-50 text-center">
