@@ -28,6 +28,7 @@ export default function OrdersTab() {
   
   // orderItems stores qty per flavor id
   const [orderItems, setOrderItems] = useState<Record<string, number>>({});
+  const [selectedGiftFlavor, setSelectedGiftFlavor] = useState<string>('f-truyenthong');
 
   const handleQtyChange = (flavorId: string, delta: number) => {
     setOrderItems(prev => {
@@ -96,7 +97,7 @@ export default function OrdersTab() {
     const currentShippingFee = parseInt(shippingFee.replace(/\D/g, ''), 10) || 0;
     const giftItems: OrderItem[] = [];
     if (totalJars >= 10 && !(totalJars >= 20 && currentShippingFee > 0)) {
-      giftItems.push({ flavorId: 'f-truyenthong', quantity: 1 });
+      giftItems.push({ flavorId: selectedGiftFlavor || 'f-truyenthong', quantity: 1 });
     }
 
     const orderPayload = {
@@ -159,6 +160,13 @@ export default function OrdersTab() {
       editItems[item.flavorId] = item.quantity || item.quantitySets || 0; // fallback for old orders
     });
     setOrderItems(editItems);
+    
+    if (order.giftItems && order.giftItems.length > 0) {
+      setSelectedGiftFlavor(order.giftItems[0].flavorId);
+    } else {
+      setSelectedGiftFlavor('f-truyenthong');
+    }
+    
     setShowAdd(true);
   };
 
@@ -190,6 +198,7 @@ export default function OrdersTab() {
     setDeliveryDate('');
     setDeliveryTime('');
     setOrderItems({});
+    setSelectedGiftFlavor('f-truyenthong');
     setShowAdd(true);
   };
 
@@ -404,8 +413,17 @@ export default function OrdersTab() {
                  </div>
               )}
               {formTotalJars >= 10 && !(formTotalJars >= 20 && parseInt(shippingFee.replace(/\D/g, ''), 10) > 0) && (
-                 <div className="text-right">
-                   <p className="text-xs font-bold text-indigo-500">🎁 Được tặng 1 hũ (Mua 10 hũ)</p>
+                 <div className="flex flex-col items-end mt-1 text-right">
+                   <p className="text-xs font-bold text-indigo-500 mb-1">🎁 Được tặng 1 hũ (Mua 10 hũ)</p>
+                   <select 
+                     value={selectedGiftFlavor} 
+                     onChange={e => setSelectedGiftFlavor(e.target.value)} 
+                     className="max-w-[160px] w-full border border-indigo-100 rounded-lg px-2 py-1 text-xs bg-indigo-50/50 text-indigo-700 outline-none focus:border-indigo-300 font-medium"
+                   >
+                     {flavors.filter(f => !f.isMix).map(f => (
+                       <option key={`gift-${f.id}`} value={f.id}>{f.name}</option>
+                     ))}
+                   </select>
                  </div>
               )}
               {formTotalJars >= 20 && (
