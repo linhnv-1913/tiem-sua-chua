@@ -34,6 +34,34 @@ export interface Order {
   items: OrderItem[];
   giftItems?: OrderItem[];
   createdAt: string; // ISO string
+  updatedAt?: string; // ISO string for status transitions / updates
+}
+
+export interface IngredientCost {
+  name: string;
+  cost: number;
+}
+
+export interface ProducedFlavor {
+  flavorId: string;
+  quantity: number;
+}
+
+export interface ProductionBatch {
+  id: string;
+  date: string; // YYYY-MM-DD
+  ingredients: IngredientCost[];
+  producedFlavors: ProducedFlavor[];
+  notes?: string;
+  appliedToInventory?: boolean;
+}
+
+export interface AppState {
+  flavors: Flavor[];
+  inventory: Inventory;
+  expenses: Expense[];
+  orders: Order[];
+  productionBatches?: ProductionBatch[];
 }
 
 export type TabType = 'orders' | 'inventory' | 'expenses' | 'reports';

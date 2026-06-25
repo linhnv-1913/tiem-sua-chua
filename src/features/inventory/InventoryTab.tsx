@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../../store';
+import { RotateCcw } from 'lucide-react';
 
 export default function InventoryTab() {
-  const { flavors, inventory, setInventory } = useAppStore();
+  const { flavors, inventory, setInventory, setFullState } = useAppStore();
 
   // Modal State
   const [editingFlavorId, setEditingFlavorId] = useState<string | null>(null);
   const [qty, setQty] = useState<number | string>(0);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const activeFlavor = flavors.find(f => f.id === editingFlavorId);
 
@@ -30,10 +32,28 @@ export default function InventoryTab() {
     });
   };
 
+  const handleResetAll = () => {
+    const resetInv = { ...inventory };
+    flavors.forEach(f => {
+      if (!f.isMix) {
+        resetInv[f.id] = 0;
+      }
+    });
+    setFullState({ inventory: resetInv });
+    setShowResetConfirm(false);
+  };
+
   return (
     <div className="p-6 flex flex-col h-full bg-white relative">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-[#5C3D3D]">Kho nguyên liệu</h2>
+        <button
+          onClick={() => setShowResetConfirm(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-500 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 active:scale-95 transition-all cursor-pointer"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          Reset về 0
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-4">
@@ -109,6 +129,37 @@ export default function InventoryTab() {
                 <button type="submit" className="flex-1 py-4 text-white font-bold bg-pink-400 rounded-2xl shadow-lg shadow-pink-200 active:opacity-90 transition">Lưu thay đổi</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showResetConfirm && (
+        <div className="absolute inset-0 bg-[#FFF9F0]/80 backdrop-blur-sm z-20 flex items-end sm:items-center justify-center sm:p-4">
+          <div className="bg-white w-full sm:max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 animate-in slide-in-from-bottom pb-10 sm:pb-8 shadow-2xl border-t-8 sm:border-8 border-white">
+            <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-red-500">
+              <RotateCcw className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-black text-[#5C3D3D] mb-2 text-center">Xác nhận Reset Kho</h3>
+            <p className="text-center text-gray-500 text-sm font-medium mb-6 leading-relaxed">
+              Bạn có chắc chắn muốn đặt nhanh số lượng của tất cả các vị sữa chua trong kho về <strong className="text-red-500">0 hũ</strong> không? Hành động này không thể hoàn tác.
+            </p>
+            
+            <div className="flex gap-4">
+              <button 
+                type="button" 
+                onClick={() => setShowResetConfirm(false)} 
+                className="flex-1 py-3.5 text-gray-500 font-bold bg-gray-50 rounded-2xl active:bg-gray-100 transition text-sm"
+              >
+                Hủy bỏ
+              </button>
+              <button 
+                type="button" 
+                onClick={handleResetAll} 
+                className="flex-1 py-3.5 text-white font-bold bg-red-500 rounded-2xl shadow-lg shadow-red-200 active:bg-red-600 transition text-sm"
+              >
+                Reset về 0
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -206,6 +206,11 @@ export default function OrdersTab() {
     if (statusFilter === 'all') return true;
     return order.status === statusFilter;
   }).sort((a, b) => {
+    if (statusFilter === 'delivered') {
+      const timeA = new Date(a.updatedAt || a.createdAt).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt).getTime();
+      return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
+    }
     const timeA = new Date(a.deliveryDate).getTime();
     const timeB = new Date(b.deliveryDate).getTime();
     return (isNaN(timeA) ? 0 : timeA) - (isNaN(timeB) ? 0 : timeB);
@@ -290,7 +295,7 @@ export default function OrdersTab() {
                 </div>
                 <div className="text-right flex flex-col items-end gap-1">
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                     order.status === 'delivered' ? 'bg-green-100 text-green-600' :
+                     order.status === 'delivered' ? (order.isBilled ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-600') :
                      order.status === 'cancelled' ? 'bg-gray-100 text-gray-500' :
                      'bg-blue-100 text-blue-600'
                   }`}>

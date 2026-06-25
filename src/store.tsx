@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Flavor, Inventory, Expense, Order, OrderItem } from './types';
+import { Flavor, Inventory, Expense, Order, OrderItem, ProductionBatch } from './types';
 
 const INITIAL_FLAVORS: Flavor[] = [
   { id: 'f-phomai', name: 'Phô mai', price: 12000 },
@@ -15,6 +15,7 @@ interface AppState {
   inventory: Inventory;
   expenses: Expense[];
   orders: Order[];
+  productionBatches?: ProductionBatch[];
 }
 
 interface AppContextType extends AppState {
@@ -34,7 +35,8 @@ const defaultState: AppState = {
   flavors: INITIAL_FLAVORS,
   inventory: INITIAL_FLAVORS.reduce((acc, f) => ({ ...acc, [f.id]: 0 }), {} as Inventory),
   expenses: [],
-  orders: []
+  orders: [],
+  productionBatches: []
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -178,7 +180,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // Success, apply deduction and save order
-    const newOrder: Order = { ...order, id: `o-${Date.now()}`, createdAt: new Date().toISOString() };
+    const newOrder: Order = { ...order, id: `o-${Date.now()}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     setState(s => ({
       ...s,
       inventory: currentInventory,
@@ -210,7 +212,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         applyInventoryChange(newInventory, s.flavors, item, -1);
       }
 
-      const updatedOrder = { ...order, ...updates };
+      const updatedOrder = { ...order, ...updates, updatedAt: new Date().toISOString() };
 
       return {
         ...s,
@@ -246,7 +248,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return {
         ...s,
         inventory: newInventory,
-        orders: s.orders.map(o => o.id === id ? { ...o, status } : o)
+        orders: s.orders.map(o => o.id === id ? { ...o, status, updatedAt: new Date().toISOString() } : o)
       };
     });
   };
@@ -254,7 +256,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const markOrderBilled = (id: string) => {
     setState(s => ({
       ...s,
-      orders: s.orders.map(o => o.id === id ? { ...o, isBilled: true } : o)
+      orders: s.orders.map(o => o.id === id ? { ...o, isBilled: true, updatedAt: new Date().toISOString() } : o)
     }));
   };
 
