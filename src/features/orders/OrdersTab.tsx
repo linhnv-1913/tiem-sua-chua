@@ -54,7 +54,7 @@ export default function OrdersTab() {
         let fPrice = flavor?.price;
         if (!fPrice) {
           if (flavor?.isMix) fPrice = 55000;
-          else fPrice = fId === 'f-phomai' ? 12000 : (fId === 'f-truyenthong' ? 10000 : 11000);
+          else fPrice = fId === 'f-phomai' ? 12000 : (fId === 'f-nepcam' ? 11000 : (fId === 'f-truyenthong' ? 10000 : 11000));
         }
         sum += fPrice * numericQty;
         totalJars += numericQty * (flavor?.isMix ? 5 : 1);
@@ -100,6 +100,7 @@ export default function OrdersTab() {
       giftItems.push({ flavorId: selectedGiftFlavor || 'f-truyenthong', quantity: 1 });
     }
 
+    const existingOrder = editingOrderId ? orders.find(o => o.id === editingOrderId) : null;
     const orderPayload = {
       customerName,
       phone,
@@ -109,7 +110,7 @@ export default function OrdersTab() {
       totalPrice: calculateTotal(),
       items,
       giftItems,
-      isBilled: false
+      isBilled: existingOrder ? existingOrder.isBilled : false
     };
 
     let result;
@@ -173,7 +174,10 @@ export default function OrdersTab() {
   const downloadBill = async () => {
     if (!billRef.current || !billOrder) return;
     try {
-      const dataUrl = await toPng(billRef.current, { cacheBust: true, backgroundColor: '#FFF9F0' });
+      // iOS Safari workaround: run toPng multiple times to ensure the image is decoded and rendered
+      await toPng(billRef.current, { cacheBust: true, backgroundColor: '#FFF9F0', pixelRatio: 2 });
+      await new Promise(resolve => setTimeout(resolve, 100)); // slight delay to allow decoding
+      const dataUrl = await toPng(billRef.current, { cacheBust: true, backgroundColor: '#FFF9F0', pixelRatio: 2 });
       const link = document.createElement('a');
       link.download = `Bill_${billOrder.customerName}.png`;
       link.href = dataUrl;
@@ -338,6 +342,9 @@ export default function OrdersTab() {
               )}
               {order.status === 'delivered' && (
                  <div className="flex gap-2 justify-end mt-2">
+                   <button onClick={() => handleEditClick(order)} className="px-4 py-2 bg-blue-50 border border-blue-100 text-blue-600 font-bold text-xs rounded-xl active:bg-blue-100">
+                      Chỉnh sửa
+                   </button>
                    <button onClick={() => setBillOrder(order)} className="px-4 py-2 bg-pink-50 border border-pink-100 text-pink-600 font-bold text-xs rounded-xl active:bg-pink-100 flex items-center gap-1">
                       <Download className="w-3 h-3" /> {order.isBilled ? 'Xuất bill lại' : 'Xuất bill'}
                    </button>
@@ -392,7 +399,7 @@ export default function OrdersTab() {
                        <div key={flavor.id} className="flex items-center justify-between bg-white p-3 border-2 border-pink-50 rounded-xl shadow-sm">
                          <div>
                             <p className="font-bold text-[#5C3D3D] text-sm">{flavor.name}</p>
-                            <p className="text-pink-500 font-bold text-xs mt-0.5">{formatVND(flavor.price || (flavor.isMix ? 55000 : (flavor.id === 'f-phomai' ? 12000 : (flavor.id === 'f-truyenthong' ? 10000 : 11000))))}/{flavor.isMix ? 'set' : 'hũ'}</p>
+                            <p className="text-pink-500 font-bold text-xs mt-0.5">{formatVND(flavor.price || (flavor.isMix ? 55000 : (flavor.id === 'f-phomai' ? 12000 : (flavor.id === 'f-nepcam' ? 11000 : (flavor.id === 'f-truyenthong' ? 10000 : 11000)))))}/{flavor.isMix ? 'set' : 'hũ'}</p>
                          </div>
                          <div className="flex items-center gap-3">
                             <button type="button" onClick={() => handleQtyChange(flavor.id, -1)} disabled={qty === 0} className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-lg shadow-sm transition ${qty === 0 ? 'bg-gray-50 text-gray-300' : 'bg-pink-100 text-pink-600 active:bg-pink-200'}`}>-</button>
@@ -508,14 +515,14 @@ export default function OrdersTab() {
                        const shipFee = billOrder.shippingFee || 0;
                         const subtotal = billOrder.items.reduce((sum: number, item: any) => {
                           const f = flavors.find(flavor => flavor.id === item.flavorId);
-                          const price = f ? (f.price || (f.isMix ? 55000 : (f.id === 'f-phomai' ? 12000 : (f.id === 'f-truyenthong' ? 10000 : 11000)))) : 0;
+                          const price = f ? (f.price || (f.isMix ? 55000 : (f.id === 'f-phomai' ? 12000 : (f.id === 'f-nepcam' ? 11000 : (f.id === 'f-truyenthong' ? 10000 : 11000))))) : 0;
                           return sum + (item.quantity || item.quantitySets || 0) * price;
                         }, 0);
                         return (
                           <>
                             {billOrder.items.map((item: any, idx: number) => {
                               const f = flavors.find(flavor => flavor.id === item.flavorId);
-                              const price = f ? (f.price || (f.isMix ? 55000 : (f.id === 'f-phomai' ? 12000 : (f.id === 'f-truyenthong' ? 10000 : 11000)))) : 0;
+                              const price = f ? (f.price || (f.isMix ? 55000 : (f.id === 'f-phomai' ? 12000 : (f.id === 'f-nepcam' ? 11000 : (f.id === 'f-truyenthong' ? 10000 : 11000))))) : 0;
                               return (
                                 <div key={`price-${idx}`} className="flex justify-between items-center text-[12px] font-medium text-gray-500 mb-1">
                                   <span>Đơn giá{billOrder.items.length > 1 ? ` (${f?.name || ''})` : ''}</span>
@@ -575,7 +582,7 @@ export default function OrdersTab() {
                        <img 
                          src={qrBase64} 
                          alt="QR Code" 
-                         className="w-[140px] h-[140px] object-contain mix-blend-multiply" 
+                         className="w-[140px] h-[140px] object-contain" 
                        />
                      </div>
                      

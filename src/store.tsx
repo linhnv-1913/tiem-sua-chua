@@ -3,6 +3,7 @@ import { Flavor, Inventory, Expense, Order, OrderItem, ProductionBatch } from '.
 
 const INITIAL_FLAVORS: Flavor[] = [
   { id: 'f-phomai', name: 'Phô mai', price: 12000 },
+  { id: 'f-nepcam', name: 'Nếp cẩm', price: 11000 },
   { id: 'f-matcha', name: 'Matcha', price: 11000 },
   { id: 'f-khoaimon', name: 'Khoai môn', price: 11000 },
   { id: 'f-cotdua', name: 'Cốt dừa', price: 11000 },
@@ -39,6 +40,68 @@ const defaultState: AppState = {
   productionBatches: []
 };
 
+export const normalizeAppState = (parsed: any): AppState => {
+  // Map old data format
+  if (parsed.flavors) {
+    parsed.flavors = parsed.flavors
+      .map((f: any) => {
+        let expectedPrice = 11000;
+        if (f.isMix) expectedPrice = 55000;
+        else if (f.id === 'f-phomai') expectedPrice = 12000;
+        else if (f.id === 'f-nepcam') expectedPrice = 11000;
+        else if (f.id === 'f-truyenthong') expectedPrice = 10000;
+        
+        return { ...f, price: expectedPrice };
+      });
+  }
+  
+  if (parsed.orders) {
+    parsed.orders = parsed.orders.map((o: any) => {
+      let itemTotal = 0;
+      let totalJars = 0;
+      if (o.items) {
+         o.items.forEach((item: any) => {
+            let fPrice = 11000;
+            if (item.flavorId === 'f-phomai') fPrice = 12000;
+            else if (item.flavorId === 'f-nepcam') fPrice = 11000;
+            else if (item.flavorId === 'f-truyenthong') fPrice = 10000;
+            else if (item.flavorId === 'f-mix') fPrice = 55000;
+            else fPrice = 11000; // default for others
+            
+            // if quantitySets was used in old data, multiply by 5 to get quantity
+            const qty = Number(item.quantity) || (Number(item.quantitySets) || 0) * 5;
+            item.quantity = qty; // Normalize to quantity
+            itemTotal += qty * fPrice;
+            totalJars += qty;
+         });
+      }
+      if (totalJars >= 5) itemTotal -= 5000; // apply discount
+      
+      return {
+         ...o,
+         isBilled: o.isBilled !== undefined ? o.isBilled : (o.status === 'delivered'),
+         totalPrice: Math.max(0, o.totalPrice || o.total || o.price || itemTotal)
+      };
+    });
+  }
+  
+  // Merge missing flavors if any
+  const mergedFlavors = [...INITIAL_FLAVORS];
+  if (parsed.flavors) {
+     parsed.flavors.forEach((pf: Flavor) => {
+       const existing = mergedFlavors.find(f => f.id === pf.id);
+       if (!existing) {
+         mergedFlavors.push(pf);
+       } else {
+         // Prefer the saved price if they customized it
+         existing.price = pf.price || existing.price;
+       }
+     });
+  }
+  const mergedInventory = { ...defaultState.inventory, ...parsed.inventory };
+  return { ...defaultState, ...parsed, flavors: mergedFlavors, inventory: mergedInventory };
+};
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
@@ -47,62 +110,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Map old data format
-        if (parsed.flavors) {
-          parsed.flavors = parsed.flavors
-            .map((f: any) => {
-              let expectedPrice = 11000;
-              if (f.isMix) expectedPrice = 55000;
-              else if (f.id === 'f-phomai') expectedPrice = 12000;
-              else if (f.id === 'f-truyenthong') expectedPrice = 10000;
-              
-              return { ...f, price: expectedPrice };
-            });
-        }
-        
-        if (parsed.orders) {
-          parsed.orders = parsed.orders.map((o: any) => {
-            let itemTotal = 0;
-            let totalJars = 0;
-            if (o.items) {
-               o.items.forEach((item: any) => {
-                  let fPrice = 11000;
-                  if (item.flavorId === 'f-phomai') fPrice = 12000;
-                  else if (item.flavorId === 'f-truyenthong') fPrice = 10000;
-                  else fPrice = 11000; // default for mix and others
-                  
-                  // if quantitySets was used in old data, multiply by 5 to get quantity
-                  const qty = Number(item.quantity) || (Number(item.quantitySets) || 0) * 5;
-                  item.quantity = qty; // Normalize to quantity
-                  itemTotal += qty * fPrice;
-                  totalJars += qty;
-               });
-            }
-            if (totalJars >= 5) itemTotal -= 5000; // apply discount
-            
-            return {
-               ...o,
-               isBilled: o.isBilled !== undefined ? o.isBilled : (o.status === 'delivered'),
-               totalPrice: Math.max(0, o.totalPrice || o.total || o.price || itemTotal)
-            };
-          });
-        }
-        
-        // Merge missing flavors if any
-        const mergedFlavors = [...INITIAL_FLAVORS];
-        if (parsed.flavors) {
-           parsed.flavors.forEach((pf: Flavor) => {
-             const existing = mergedFlavors.find(f => f.id === pf.id);
-             if (!existing) {
-               mergedFlavors.push(pf);
-             } else {
-               // Prefer the saved price if they customized it (although in this case I should probably force my updated prices, but user can change it).
-               // For now just use pf.price.
-               existing.price = pf.price || existing.price;
-             }
-           });
-        }
-        return { ...defaultState, ...parsed, flavors: mergedFlavors };
+        return normalizeAppState(parsed);
       } catch (e) {
         return defaultState;
       }
@@ -193,7 +201,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     let result = { success: true, error: undefined as undefined | string };
     setState(s => {
       const order = s.orders.find(o => o.id === id);
-      if (!order || order.status !== 'pending') {
+      if (!order || (order.status !== 'pending' && order.status !== 'delivered')) {
         result = { success: false, error: 'Không thể chỉnh sửa đơn hàng này.' };
         return s;
       }
@@ -261,7 +269,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const setFullState = (newState: Partial<AppState>) => {
-    setState(s => ({ ...s, ...newState }));
+    setState(s => normalizeAppState({ ...s, ...newState }));
   };
 
   return (

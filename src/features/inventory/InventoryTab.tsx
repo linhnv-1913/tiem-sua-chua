@@ -67,7 +67,7 @@ export default function InventoryTab() {
               className="bg-pink-50/50 p-5 rounded-3xl border-2 border-pink-100 flex flex-col items-center text-center outline-none active:scale-95 active:bg-pink-100/50 transition-all cursor-pointer shadow-sm relative overflow-hidden"
             >
               <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-3 text-3xl z-10">
-                {flavor.name.includes('Phô mai') ? '🧀' : flavor.name.includes('Matcha') ? '🍵' : flavor.name.includes('Khoai') ? '🍠' : flavor.name.includes('dừa') ? '🥥' : '🥛'}
+                {flavor.name.includes('Phô mai') ? '🧀' : flavor.name.includes('Nếp') ? '🌾' : flavor.name.includes('Matcha') ? '🍵' : flavor.name.includes('Khoai') ? '🍠' : flavor.name.includes('dừa') ? '🥥' : '🥛'}
               </div>
               <h3 className="font-bold text-[#5C3D3D] text-sm mb-1 z-10">{flavor.name}</h3>
               

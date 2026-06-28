@@ -6,12 +6,10 @@ import { startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, isWithinInt
 import { Plus, Trash2, Check, ArrowRight, RotateCcw, Calendar, Coins, Package, Percent, ChevronDown, ChevronUp } from 'lucide-react';
 import { IngredientCost, ProducedFlavor, ProductionBatch } from '../../types';
 
-type TimeFilter = 'thisWeek' | 'lastWeek' | 'thisMonth';
 type SubTabType = 'general' | 'batches';
 
 export default function ReportsTab() {
   const { orders, expenses, flavors, productionBatches = [], inventory, setFullState } = useAppStore();
-  const [filter, setFilter] = useState<TimeFilter>('thisWeek');
   const [subTab, setSubTab] = useState<SubTabType>('general');
 
   // Modal State for adding production batch
@@ -43,28 +41,9 @@ export default function ReportsTab() {
 
   // General reports metrics
   const stats = useMemo(() => {
-    const today = new Date();
-    let interval = { start: new Date(0), end: new Date() };
+    const filteredOrders = orders.filter(o => o.status === 'delivered');
 
-    if (filter === 'thisWeek') {
-      interval = { start: startOfWeek(today, { weekStartsOn: 1 }), end: endOfWeek(today, { weekStartsOn: 1 }) };
-    } else if (filter === 'lastWeek') {
-      const lastWeek = subWeeks(today, 1);
-      interval = { start: startOfWeek(lastWeek, { weekStartsOn: 1 }), end: endOfWeek(lastWeek, { weekStartsOn: 1 }) };
-    } else if (filter === 'thisMonth') {
-      interval = { start: startOfMonth(today), end: endOfMonth(today) };
-    }
-
-    const filteredOrders = orders.filter(o => {
-      if (o.status !== 'delivered') return false; 
-      const d = safeDate(o.createdAt);
-      return isWithinInterval(d, interval);
-    });
-
-    const filteredExpenses = expenses.filter(e => {
-       const d = safeDate(e.date);
-       return isWithinInterval(d, interval);
-    });
+    const filteredExpenses = expenses;
 
     const revenue = filteredOrders.reduce((sum, o) => sum + o.totalPrice, 0);
     const cost = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -84,7 +63,7 @@ export default function ReportsTab() {
        .sort((a, b) => b.value - a.value);
 
     return { revenue, cost, profit, chartData };
-  }, [orders, expenses, flavors, filter]);
+  }, [orders, expenses, flavors]);
 
   // Ingredients helper controls
   const handleAddIngredient = () => {
@@ -127,10 +106,10 @@ export default function ReportsTab() {
     let totalJars = 0;
     let expectedRevenue = 0;
 
-    Object.entries(producedQuantities).forEach(([flavorId, qty]) => {
+    (Object.entries(producedQuantities) as [string, number][]).forEach(([flavorId, qty]) => {
       const flavor = flavors.find(f => f.id === flavorId);
       if (flavor) {
-        const price = flavor.price || (flavor.id === 'f-phomai' ? 12000 : (flavor.id === 'f-truyenthong' ? 10000 : 11000));
+        const price = flavor.price || (flavor.id === 'f-phomai' ? 12000 : (flavor.id === 'f-nepcam' ? 11000 : (flavor.id === 'f-truyenthong' ? 10000 : 11000)));
         totalJars += qty;
         expectedRevenue += qty * price;
       }
@@ -154,7 +133,7 @@ export default function ReportsTab() {
   const handleSaveBatch = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const producedFlavors: ProducedFlavor[] = Object.entries(producedQuantities)
+    const producedFlavors: ProducedFlavor[] = (Object.entries(producedQuantities) as [string, number][])
       .filter(([_, qty]) => qty > 0)
       .map(([flavorId, qty]) => ({ flavorId, quantity: qty }));
 
@@ -255,25 +234,6 @@ export default function ReportsTab() {
 
       {subTab === 'general' ? (
         <>
-          {/* General Report Filter */}
-          <div className="flex gap-2 mb-6 bg-pink-50 p-1.5 rounded-2xl">
-            {[
-              { id: 'thisWeek', label: 'Tuần này' },
-              { id: 'lastWeek', label: 'Tuần trước' },
-              { id: 'thisMonth', label: 'Tháng này' },
-            ].map(f => (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id as TimeFilter)}
-                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-colors ${
-                  filter === f.id ? 'bg-white shadow-sm text-pink-500' : 'text-pink-400 hover:text-pink-500'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-
           {/* Cards */}
           <div className="grid gap-4 mb-8">
             <div className="flex gap-4">
@@ -368,7 +328,7 @@ export default function ReportsTab() {
 
                 batch.producedFlavors.forEach(pf => {
                   const flavor = flavors.find(f => f.id === pf.flavorId);
-                  const price = flavor ? (flavor.price || (flavor.id === 'f-phomai' ? 12000 : (flavor.id === 'f-truyenthong' ? 10000 : 11000))) : 11000;
+                  const price = flavor ? (flavor.price || (flavor.id === 'f-phomai' ? 12000 : (flavor.id === 'f-nepcam' ? 11000 : (flavor.id === 'f-truyenthong' ? 10000 : 11000)))) : 11000;
                   totalBatchJars += pf.quantity;
                   batchRevenue += pf.quantity * price;
                 });
@@ -454,7 +414,7 @@ export default function ReportsTab() {
                                 {batch.producedFlavors.map((pf, idx) => {
                                   const flavObj = flavors.find(f => f.id === pf.flavorId);
                                   const name = flavObj?.name || pf.flavorId;
-                                  const price = flavObj ? (flavObj.price || (flavObj.id === 'f-phomai' ? 12000 : (flavObj.id === 'f-truyenthong' ? 10000 : 11000))) : 11000;
+                                  const price = flavObj ? (flavObj.price || (flavObj.id === 'f-phomai' ? 12000 : (flavObj.id === 'f-nepcam' ? 11000 : (flavObj.id === 'f-truyenthong' ? 10000 : 11000)))) : 11000;
                                   return (
                                     <div key={idx} className="flex justify-between p-2.5 text-xs">
                                       <div>
@@ -642,7 +602,7 @@ export default function ReportsTab() {
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
                   {baseFlavors.map(flavor => {
-                    const price = flavor.price || (flavor.id === 'f-phomai' ? 12000 : (flavor.id === 'f-truyenthong' ? 10000 : 11000));
+                    const price = flavor.price || (flavor.id === 'f-phomai' ? 12000 : (flavor.id === 'f-nepcam' ? 11000 : (flavor.id === 'f-truyenthong' ? 10000 : 11000)));
                     const qty = producedQuantities[flavor.id] || 0;
                     return (
                       <div 
