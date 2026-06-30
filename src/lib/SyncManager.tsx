@@ -45,7 +45,8 @@ export const SyncManager = ({ children }: { children: React.ReactNode }) => {
       flavors: store.flavors,
       inventory: store.inventory,
       expenses: store.expenses,
-      orders: store.orders
+      orders: store.orders,
+      productionBatches: store.productionBatches
     });
     
     // Ignore initial mount state if not ready or no diff
@@ -65,14 +66,15 @@ export const SyncManager = ({ children }: { children: React.ReactNode }) => {
             flavors: store.flavors,
             inventory: store.inventory,
             expenses: store.expenses,
-            orders: store.orders
+            orders: store.orders,
+            productionBatches: store.productionBatches
           });
        }, 2000); 
 
        return () => clearTimeout(timeoutId);
     }
 
-  }, [store.flavors, store.inventory, store.expenses, store.orders, isInitialLoad]);
+  }, [store.flavors, store.inventory, store.expenses, store.orders, store.productionBatches, isInitialLoad]);
 
 
   if (isInitializing) {

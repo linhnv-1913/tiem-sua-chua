@@ -3,7 +3,7 @@ import { useAppStore } from '../../store';
 import { formatVND, safeDate } from '../../utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
-import { Plus, Trash2, Check, ArrowRight, RotateCcw, Calendar, Coins, Package, Percent, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Check, ArrowRight, RotateCcw, Calendar, Coins, Package, Percent, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
 import { IngredientCost, ProducedFlavor, ProductionBatch } from '../../types';
 
 type SubTabType = 'general' | 'batches';
@@ -38,6 +38,27 @@ export default function ReportsTab() {
 
   // State to track expanded batches in list
   const [expandedBatchId, setExpandedBatchId] = useState<string | null>(null);
+  const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
+
+  const handleEditBatch = (batch: ProductionBatch) => {
+    setEditingBatchId(batch.id);
+    setBatchDate(batch.date);
+    setBatchNotes(batch.notes || '');
+    setIngredients(batch.ingredients.length > 0 ? [...batch.ingredients] : [
+      { name: 'Sữa tươi & Sữa đặc', cost: 0 },
+      { name: 'Men cái', cost: 0 },
+      { name: 'Whipping cream', cost: 0 },
+      { name: 'Hũ nhựa & Bao bì', cost: 0 },
+      { name: 'Điện, nước, gas', cost: 0 }
+    ]);
+    const quantities: Record<string, number> = {};
+    baseFlavors.forEach(f => {
+      const pf = batch.producedFlavors.find(p => p.flavorId === f.id);
+      quantities[f.id] = pf ? pf.quantity : 0;
+    });
+    setProducedQuantities(quantities);
+    setShowAddBatch(true);
+  };
 
   // General reports metrics
   const stats = useMemo(() => {
@@ -142,20 +163,56 @@ export default function ReportsTab() {
       return;
     }
 
-    const newBatch: ProductionBatch = {
-      id: `batch-${Date.now()}`,
-      date: batchDate,
-      ingredients: ingredients.filter(ing => ing.name.trim() !== '' && ing.cost > 0),
-      producedFlavors,
-      notes: batchNotes.trim() || undefined,
-      appliedToInventory: false
-    };
+    if (editingBatchId) {
+      // Find the old batch to check if it was applied to inventory
+      const oldBatch = productionBatches.find(b => b.id === editingBatchId);
+      
+      const updatedBatch: ProductionBatch = {
+        id: editingBatchId,
+        date: batchDate,
+        ingredients: ingredients.filter(ing => ing.name.trim() !== '' && ing.cost > 0),
+        producedFlavors,
+        notes: batchNotes.trim() || undefined,
+        appliedToInventory: oldBatch ? oldBatch.appliedToInventory : false
+      };
+      
+      let newInventory = { ...inventory };
+      
+      // If it was already applied to inventory, we need to adjust the inventory
+      if (oldBatch && oldBatch.appliedToInventory) {
+        // Revert old quantities
+        oldBatch.producedFlavors.forEach(pf => {
+          newInventory[pf.flavorId] = (newInventory[pf.flavorId] || 0) - pf.quantity;
+        });
+        // Add new quantities
+        updatedBatch.producedFlavors.forEach(pf => {
+          newInventory[pf.flavorId] = (newInventory[pf.flavorId] || 0) + pf.quantity;
+        });
+      }
 
-    setFullState({
-      productionBatches: [newBatch, ...productionBatches]
-    });
+      const updatedBatches = productionBatches.map(b => b.id === editingBatchId ? updatedBatch : b);
+      
+      setFullState({
+        productionBatches: updatedBatches,
+        inventory: newInventory
+      });
+    } else {
+      const newBatch: ProductionBatch = {
+        id: `batch-${Date.now()}`,
+        date: batchDate,
+        ingredients: ingredients.filter(ing => ing.name.trim() !== '' && ing.cost > 0),
+        producedFlavors,
+        notes: batchNotes.trim() || undefined,
+        appliedToInventory: false
+      };
+
+      setFullState({
+        productionBatches: [newBatch, ...productionBatches]
+      });
+    }
 
     // Reset Form
+    setEditingBatchId(null);
     setBatchDate(new Date().toISOString().split('T')[0]);
     setBatchNotes('');
     setIngredients([
@@ -461,14 +518,24 @@ export default function ReportsTab() {
 
                         {/* Expandable row actions */}
                         <div className="flex flex-wrap gap-3 justify-between items-center pt-3 border-t border-pink-50/60">
-                          <button
-                            type="button"
-                            onClick={(e) => handleDeleteBatch(batch.id, e)}
-                            className="flex items-center gap-1 text-xs text-red-500 font-bold hover:text-red-600 cursor-pointer active:scale-95 transition-all"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            Xóa đợt làm
-                          </button>
+                          <div className="flex gap-4">
+                            <button
+                              type="button"
+                              onClick={() => handleEditBatch(batch)}
+                              className="flex items-center gap-1 text-xs text-blue-500 font-bold hover:text-blue-600 cursor-pointer active:scale-95 transition-all"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                              Sửa đợt làm
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteBatch(batch.id, e)}
+                              className="flex items-center gap-1 text-xs text-red-500 font-bold hover:text-red-600 cursor-pointer active:scale-95 transition-all"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Xóa
+                            </button>
+                          </div>
 
                           <div className="flex gap-2">
                             {!batch.appliedToInventory ? (
@@ -505,10 +572,25 @@ export default function ReportsTab() {
             className="bg-white w-full sm:max-w-xl rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 sm:p-8 animate-in slide-in-from-bottom max-h-[90vh] overflow-y-auto shadow-2xl border-t-8 sm:border-8 border-white flex flex-col"
           >
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-black text-[#5C3D3D]">🧪 Tạo Đợt Làm Sữa Chua</h3>
+              <h3 className="text-lg font-black text-[#5C3D3D]">{editingBatchId ? '✏️ Cập nhật Đợt Làm' : '🧪 Tạo Đợt Làm Sữa Chua'}</h3>
               <button 
                 type="button" 
-                onClick={() => setShowAddBatch(false)}
+                onClick={() => {
+                  setShowAddBatch(false);
+                  setEditingBatchId(null);
+                  setBatchDate(new Date().toISOString().split('T')[0]);
+                  setBatchNotes('');
+                  setIngredients([
+                    { name: 'Sữa tươi & Sữa đặc', cost: 0 },
+                    { name: 'Men cái', cost: 0 },
+                    { name: 'Whipping cream', cost: 0 },
+                    { name: 'Hũ nhựa & Bao bì', cost: 0 },
+                    { name: 'Điện, nước, gas', cost: 0 }
+                  ]);
+                  const cleared: Record<string, number> = {};
+                  baseFlavors.forEach(f => { cleared[f.id] = 0; });
+                  setProducedQuantities(cleared);
+                }}
                 className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 font-bold cursor-pointer hover:bg-gray-100 transition"
               >
                 ✕
@@ -702,7 +784,22 @@ export default function ReportsTab() {
             <div className="flex gap-4 mt-6 pt-4 border-t border-gray-100">
               <button 
                 type="button" 
-                onClick={() => setShowAddBatch(false)}
+                onClick={() => {
+                  setShowAddBatch(false);
+                  setEditingBatchId(null);
+                  setBatchDate(new Date().toISOString().split('T')[0]);
+                  setBatchNotes('');
+                  setIngredients([
+                    { name: 'Sữa tươi & Sữa đặc', cost: 0 },
+                    { name: 'Men cái', cost: 0 },
+                    { name: 'Whipping cream', cost: 0 },
+                    { name: 'Hũ nhựa & Bao bì', cost: 0 },
+                    { name: 'Điện, nước, gas', cost: 0 }
+                  ]);
+                  const cleared: Record<string, number> = {};
+                  baseFlavors.forEach(f => { cleared[f.id] = 0; });
+                  setProducedQuantities(cleared);
+                }}
                 className="flex-1 py-3.5 text-gray-500 font-bold bg-gray-50 hover:bg-gray-100 rounded-2xl active:scale-95 transition text-sm cursor-pointer"
               >
                 Hủy bỏ
@@ -711,7 +808,7 @@ export default function ReportsTab() {
                 type="submit" 
                 className="flex-1 py-3.5 text-white font-bold bg-pink-500 hover:bg-pink-600 rounded-2xl shadow-lg shadow-pink-200 active:scale-95 transition text-sm cursor-pointer"
               >
-                Lưu đợt làm
+                {editingBatchId ? 'Cập nhật' : 'Lưu đợt làm'}
               </button>
             </div>
           </form>
