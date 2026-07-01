@@ -1,28 +1,63 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../../store';
 import { formatVND, safeDate } from '../../utils';
-import { Plus, Receipt } from 'lucide-react';
+import { Plus, Receipt, Edit2 } from 'lucide-react';
 
 export default function ExpensesTab() {
-  const { expenses, addExpense } = useAppStore();
+  const { expenses, addExpense, updateExpense } = useAppStore();
   const [showAdd, setShowAdd] = useState(false);
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
 
   // Form State
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
 
-  const handleAddExpense = (e: React.FormEvent) => {
+  const openAddForm = () => {
+    setEditingExpenseId(null);
+    setName('');
+    setAmount('');
+    setDate(new Date().toISOString().split('T')[0]);
+    setShowAdd(true);
+  };
+
+  const openEditForm = (expense: any) => {
+    setEditingExpenseId(expense.id);
+    setName(expense.name);
+    setAmount(expense.amount.toLocaleString('vi-VN'));
+    setDate(expense.date.split('T')[0]);
+    setShowAdd(true);
+  };
+
+  const handleSaveExpense = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !amount || !date) return;
-    addExpense({
-      name,
-      amount: parseInt(amount.replace(/\D/g, ''), 10),
-      date
-    });
+    
+    const parsedAmount = parseInt(amount.replace(/\D/g, ''), 10);
+    
+    if (editingExpenseId) {
+      updateExpense(editingExpenseId, {
+        name,
+        amount: parsedAmount,
+        date
+      });
+    } else {
+      addExpense({
+        name,
+        amount: parsedAmount,
+        date
+      });
+    }
+    
     setName('');
     setAmount('');
     setShowAdd(false);
+    setEditingExpenseId(null);
+  };
+
+  const handleCancel = () => {
+    setShowAdd(false);
+    setEditingExpenseId(null);
   };
 
   return (
@@ -30,7 +65,7 @@ export default function ExpensesTab() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-[#5C3D3D]">Chi phí nguyên liệu</h2>
         <button 
-          onClick={() => setShowAdd(true)}
+          onClick={openAddForm}
           className="bg-orange-50 text-orange-500 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1 active:bg-orange-100 transition"
         >
           <Plus size={16} /> Thêm chi
@@ -46,7 +81,7 @@ export default function ExpensesTab() {
         ) : (
           <ul className="space-y-4">
             {expenses.map(expense => (
-              <li key={expense.id} className="bg-white p-5 rounded-3xl border-2 border-orange-50 flex justify-between items-center shadow-sm">
+              <li key={expense.id} className="bg-white p-5 rounded-3xl border-2 border-orange-50 flex justify-between items-center shadow-sm relative group">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-orange-100 text-orange-500 rounded-xl flex items-center justify-center text-xl font-bold">💸</div>
                   <div>
@@ -54,8 +89,17 @@ export default function ExpensesTab() {
                     <p className="text-xs text-orange-400 font-bold uppercase tracking-wider">{new Intl.DateTimeFormat('vi-VN').format(safeDate(expense.date))}</p>
                   </div>
                 </div>
-                <div className="text-orange-500 font-black text-lg">
-                  -{formatVND(expense.amount)}
+                <div className="flex items-center gap-3">
+                  <div className="text-orange-500 font-black text-lg">
+                    -{formatVND(expense.amount)}
+                  </div>
+                  <button 
+                    onClick={() => openEditForm(expense)}
+                    className="p-2 text-orange-400 bg-orange-50 rounded-xl active:bg-orange-100 transition"
+                    title="Chỉnh sửa"
+                  >
+                    <Edit2 size={16} />
+                  </button>
                 </div>
               </li>
             ))}
@@ -66,8 +110,8 @@ export default function ExpensesTab() {
       {showAdd && (
         <div className="absolute inset-0 bg-[#FFF9F0]/80 backdrop-blur-sm z-20 flex items-end sm:items-center justify-center sm:p-4">
           <div className="bg-white w-full sm:max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 animate-in slide-in-from-bottom pb-10 sm:pb-8 shadow-2xl border-t-8 sm:border-8 border-white">
-            <h3 className="text-2xl font-black text-[#5C3D3D] mb-6 text-center">Nhập chi phí</h3>
-            <form onSubmit={handleAddExpense} className="flex flex-col gap-5">
+            <h3 className="text-2xl font-black text-[#5C3D3D] mb-6 text-center">{editingExpenseId ? 'Sửa chi phí' : 'Nhập chi phí'}</h3>
+            <form onSubmit={handleSaveExpense} className="flex flex-col gap-5">
               <div>
                 <label className="block text-sm font-bold text-[#5C3D3D] mb-2 uppercase tracking-wide">Tên nguyên liệu</label>
                 <input 
@@ -110,7 +154,7 @@ export default function ExpensesTab() {
                 />
               </div>
               <div className="flex gap-4 mt-4">
-                <button type="button" onClick={() => setShowAdd(false)} className="flex-1 py-4 text-orange-500 font-bold bg-orange-50 rounded-2xl active:bg-orange-100 transition">Hủy</button>
+                <button type="button" onClick={handleCancel} className="flex-1 py-4 text-orange-500 font-bold bg-orange-50 rounded-2xl active:bg-orange-100 transition">Hủy</button>
                 <button type="submit" className="flex-1 py-4 text-white font-bold bg-orange-400 rounded-2xl shadow-lg shadow-orange-200 active:opacity-90 transition">Lưu</button>
               </div>
             </form>

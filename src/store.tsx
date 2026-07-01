@@ -26,6 +26,7 @@ interface AppContextType extends AppState {
   addInventory: (flavorId: string, quantityJars: number) => void;
   setInventory: (flavorId: string, quantityJars: number) => void;
   addExpense: (expense: Omit<Expense, 'id'>) => void;
+  updateExpense: (id: string, updates: Partial<Omit<Expense, 'id'>>) => void;
   addOrder: (order: Omit<Order, 'id' | 'createdAt'>) => { success: boolean; error?: string };
   updateOrder: (id: string, updates: Omit<Order, 'id' | 'createdAt' | 'status'>) => { success: boolean; error?: string };
   updateOrderStatus: (id: string, status: Order['status']) => void;
@@ -178,6 +179,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }));
   };
 
+  const updateExpense = (id: string, updates: Partial<Omit<Expense, 'id'>>) => {
+    setState(s => ({
+      ...s,
+      expenses: s.expenses.map(e => e.id === id ? { ...e, ...updates } : e)
+    }));
+  };
+
   const addOrder = (order: Omit<Order, 'id' | 'createdAt'>): { success: boolean; error?: string } => {
     // Validation Logic
     const currentInventory = { ...state.inventory };
@@ -274,7 +282,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AppContext.Provider value={{ ...state, addFlavor, updateFlavorPrice, addInventory, setInventory, addExpense, addOrder, updateOrder, updateOrderStatus, markOrderBilled, setFullState }}>
+    <AppContext.Provider value={{ ...state, addFlavor, updateFlavorPrice, addInventory, setInventory, addExpense, updateExpense, addOrder, updateOrder, updateOrderStatus, markOrderBilled, setFullState }}>
       {children}
     </AppContext.Provider>
   );
