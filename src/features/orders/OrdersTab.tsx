@@ -393,7 +393,7 @@ export default function OrdersTab() {
              <section>
                 <h4 className="font-bold text-[#5C3D3D] mb-3 text-base">Chọn món</h4>
                 <div className="space-y-3">
-                  {flavors.map(flavor => {
+                  {flavors.filter(f => !f.isMix).map(flavor => {
                      const qty = orderItems[flavor.id] || 0;
                      return (
                        <div key={flavor.id} className="flex items-center justify-between bg-white p-3 border-2 border-pink-50 rounded-xl shadow-sm">

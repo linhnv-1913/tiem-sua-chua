@@ -11,6 +11,7 @@ type SubTabType = 'general' | 'batches';
 export default function ReportsTab() {
   const { orders, expenses, flavors, productionBatches = [], inventory, setFullState } = useAppStore();
   const [subTab, setSubTab] = useState<SubTabType>('general');
+  const [reportDateFilter, setReportDateFilter] = useState<string>('all');
 
   // Modal State for adding production batch
   const [showAddBatch, setShowAddBatch] = useState(false);
@@ -61,10 +62,29 @@ export default function ReportsTab() {
   };
 
   // General reports metrics
-  const stats = useMemo(() => {
-    const filteredOrders = orders.filter(o => o.status === 'delivered');
+  const availableDates = useMemo(() => {
+    const dates = new Set<string>();
+    orders.forEach(o => {
+      if (o.status === 'delivered' && o.deliveryDate) {
+         dates.add(o.deliveryDate.split('T')[0]);
+      }
+    });
+    return Array.from(dates).sort((a, b) => b.localeCompare(a));
+  }, [orders]);
 
-    const filteredExpenses = expenses;
+  const stats = useMemo(() => {
+    const filteredOrders = orders.filter(o => {
+      if (o.status !== 'delivered') return false;
+      if (reportDateFilter !== 'all') {
+         if (!o.deliveryDate) return false;
+         return o.deliveryDate.split('T')[0] === reportDateFilter;
+      }
+      return true;
+    });
+
+    const filteredExpenses = reportDateFilter === 'all'
+      ? expenses
+      : expenses.filter(e => e.date === reportDateFilter);
 
     const revenue = filteredOrders.reduce((sum, o) => sum + o.totalPrice, 0);
     const cost = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -84,7 +104,7 @@ export default function ReportsTab() {
        .sort((a, b) => b.value - a.value);
 
     return { revenue, cost, profit, chartData };
-  }, [orders, expenses, flavors]);
+  }, [orders, expenses, flavors, reportDateFilter]);
 
   // Ingredients helper controls
   const handleAddIngredient = () => {
@@ -291,6 +311,25 @@ export default function ReportsTab() {
 
       {subTab === 'general' ? (
         <>
+          {/* Filters */}
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="font-bold text-[#5C3D3D]">Thống kê theo ngày giao</h3>
+            <div className="relative">
+              <select
+                value={reportDateFilter}
+                onChange={e => setReportDateFilter(e.target.value)}
+                className="appearance-none bg-white border border-gray-200 text-[#5C3D3D] text-sm rounded-xl pl-4 pr-10 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all shadow-sm"
+              >
+                <option value="all">Tất cả thời gian</option>
+                {availableDates.map(date => {
+                   const formattedDate = new Date(date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                   return <option key={date} value={date}>{formattedDate}</option>;
+                })}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+
           {/* Cards */}
           <div className="grid gap-4 mb-8">
             <div className="flex gap-4">

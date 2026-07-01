@@ -7,6 +7,7 @@ const INITIAL_FLAVORS: Flavor[] = [
   { id: 'f-matcha', name: 'Matcha', price: 11000 },
   { id: 'f-khoaimon', name: 'Khoai môn', price: 11000 },
   { id: 'f-cotdua', name: 'Cốt dừa', price: 11000 },
+  { id: 'f-caphe', name: 'Cà phê', price: 11000 },
   { id: 'f-truyenthong', name: 'Truyền thống', price: 10000 },
   { id: 'f-mix', name: 'Mix các vị (Set 5 hũ)', price: 55000, isMix: true }
 ];
