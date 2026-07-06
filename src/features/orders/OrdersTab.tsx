@@ -15,6 +15,7 @@ export default function OrdersTab() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'delivered' | 'cancelled'>('pending');
   const [dateFilter, setDateFilter] = useState<string>('');
   const [searchName, setSearchName] = useState<string>('');
+  const [billedFilter, setBilledFilter] = useState<'all' | 'billed' | 'unbilled'>('all');
   const [billOrder, setBillOrder] = useState<Order | null>(null);
 
   // Form State
@@ -210,15 +211,20 @@ export default function OrdersTab() {
 
   const filteredOrders = orders.filter(order => {
     if (statusFilter !== 'all') {
-      return order.status === statusFilter;
-    }
-    
-    // Applying filters only on 'all' tab
-    if (dateFilter && order.deliveryDate) {
-      if (!order.deliveryDate.startsWith(dateFilter)) return false;
-    }
-    if (searchName && order.customerName) {
-      if (!order.customerName.toLowerCase().includes(searchName.toLowerCase())) return false;
+      if (order.status !== statusFilter) return false;
+      
+      if (statusFilter === 'delivered' && billedFilter !== 'all') {
+        if (billedFilter === 'billed' && !order.isBilled) return false;
+        if (billedFilter === 'unbilled' && order.isBilled) return false;
+      }
+    } else {
+      // Applying filters only on 'all' tab
+      if (dateFilter && order.deliveryDate) {
+        if (!order.deliveryDate.startsWith(dateFilter)) return false;
+      }
+      if (searchName && order.customerName) {
+        if (!order.customerName.toLowerCase().includes(searchName.toLowerCase())) return false;
+      }
     }
     
     return true;
@@ -291,6 +297,21 @@ export default function OrdersTab() {
             onChange={e => setSearchName(e.target.value)}
             className="flex-[2] bg-white border border-pink-100 text-[#5C3D3D] text-sm rounded-xl px-4 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm"
           />
+        </div>
+      )}
+
+      {statusFilter === 'delivered' && (
+        <div className="flex justify-end mb-4 px-1">
+          <select
+            value={billedFilter}
+            onChange={(e) => setBilledFilter(e.target.value as any)}
+            className="bg-white border border-pink-100 text-[#5C3D3D] text-xs rounded-xl px-3 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm cursor-pointer appearance-none pr-8 relative"
+            style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
+          >
+            <option value="all"></option>
+            <option value="unbilled">Chưa xuất bill</option>
+            <option value="billed">Đã xuất bill</option>
+          </select>
         </div>
       )}
 
