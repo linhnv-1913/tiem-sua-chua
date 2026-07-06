@@ -13,6 +13,8 @@ export default function OrdersTab() {
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'delivered' | 'cancelled'>('pending');
+  const [dateFilter, setDateFilter] = useState<string>('');
+  const [searchName, setSearchName] = useState<string>('');
   const [billOrder, setBillOrder] = useState<Order | null>(null);
 
   // Form State
@@ -207,8 +209,19 @@ export default function OrdersTab() {
   };
 
   const filteredOrders = orders.filter(order => {
-    if (statusFilter === 'all') return true;
-    return order.status === statusFilter;
+    if (statusFilter !== 'all') {
+      return order.status === statusFilter;
+    }
+    
+    // Applying filters only on 'all' tab
+    if (dateFilter && order.deliveryDate) {
+      if (!order.deliveryDate.startsWith(dateFilter)) return false;
+    }
+    if (searchName && order.customerName) {
+      if (!order.customerName.toLowerCase().includes(searchName.toLowerCase())) return false;
+    }
+    
+    return true;
   }).sort((a, b) => {
     if (statusFilter === 'delivered') {
       const timeA = new Date(a.updatedAt || a.createdAt).getTime();
@@ -262,6 +275,24 @@ export default function OrdersTab() {
           </button>
         ))}
       </div>
+      
+      {statusFilter === 'all' && (
+        <div className="flex flex-col sm:flex-row gap-2 mb-4">
+          <input
+            type="date"
+            value={dateFilter}
+            onChange={e => setDateFilter(e.target.value)}
+            className="flex-1 bg-white border border-pink-100 text-[#5C3D3D] text-sm rounded-xl px-4 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm"
+          />
+          <input
+            type="text"
+            placeholder="Tìm theo tên khách hàng..."
+            value={searchName}
+            onChange={e => setSearchName(e.target.value)}
+            className="flex-[2] bg-white border border-pink-100 text-[#5C3D3D] text-sm rounded-xl px-4 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm"
+          />
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto pb-4 space-y-4">
         {filteredOrders.length === 0 ? (
