@@ -178,9 +178,9 @@ export default function OrdersTab() {
     if (!billRef.current || !billOrder) return;
     try {
       // iOS Safari workaround: run toPng multiple times to ensure the image is decoded and rendered
-      await toPng(billRef.current, { cacheBust: true, backgroundColor: '#FFF9F0', pixelRatio: 2 });
-      await new Promise(resolve => setTimeout(resolve, 100)); // slight delay to allow decoding
-      const dataUrl = await toPng(billRef.current, { cacheBust: true, backgroundColor: '#FFF9F0', pixelRatio: 2 });
+      await toPng(billRef.current, { cacheBust: false, backgroundColor: '#FFF9F0', pixelRatio: 2 });
+      await new Promise(resolve => setTimeout(resolve, 300)); // slight delay to allow decoding
+      const dataUrl = await toPng(billRef.current, { cacheBust: false, backgroundColor: '#FFF9F0', pixelRatio: 2 });
       const link = document.createElement('a');
       link.download = `Bill_${billOrder.customerName}.png`;
       link.href = dataUrl;
