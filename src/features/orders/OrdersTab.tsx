@@ -32,6 +32,7 @@ export default function OrdersTab() {
   // orderItems stores qty per flavor id
   const [orderItems, setOrderItems] = useState<Record<string, number>>({});
   const [selectedGiftFlavor, setSelectedGiftFlavor] = useState<string>('f-truyenthong');
+  const [giftQuantity, setGiftQuantity] = useState<number>(0);
 
   const handleQtyChange = (flavorId: string, delta: number) => {
     setOrderItems(prev => {
@@ -99,8 +100,8 @@ export default function OrdersTab() {
     }, 0);
     const currentShippingFee = parseInt(shippingFee.replace(/\D/g, ''), 10) || 0;
     const giftItems: OrderItem[] = [];
-    if (totalJars >= 10 && !(totalJars >= 20 && currentShippingFee > 0)) {
-      giftItems.push({ flavorId: selectedGiftFlavor || 'f-truyenthong', quantity: 1 });
+    if (giftQuantity > 0) {
+      giftItems.push({ flavorId: selectedGiftFlavor || 'f-truyenthong', quantity: giftQuantity });
     }
 
     const existingOrder = editingOrderId ? orders.find(o => o.id === editingOrderId) : null;
@@ -167,8 +168,10 @@ export default function OrdersTab() {
     
     if (order.giftItems && order.giftItems.length > 0) {
       setSelectedGiftFlavor(order.giftItems[0].flavorId);
+      setGiftQuantity(order.giftItems.reduce((sum, item) => sum + item.quantity, 0));
     } else {
       setSelectedGiftFlavor('f-truyenthong');
+      setGiftQuantity(0);
     }
     
     setShowAdd(true);
@@ -206,6 +209,7 @@ export default function OrdersTab() {
     setDeliveryTime('');
     setOrderItems({});
     setSelectedGiftFlavor('f-truyenthong');
+    setGiftQuantity(0);
     setShowAdd(true);
   };
 
@@ -476,9 +480,17 @@ export default function OrdersTab() {
                    <p className="text-xs font-bold text-green-500">- Đã giảm 5k (Mua 5 hũ)</p>
                  </div>
               )}
-              {formTotalJars >= 10 && !(formTotalJars >= 20 && parseInt(shippingFee.replace(/\D/g, ''), 10) > 0) && (
-                 <div className="flex flex-col items-end mt-1 text-right">
-                   <p className="text-xs font-bold text-indigo-500 mb-1">🎁 Được tặng 1 hũ (Mua 10 hũ)</p>
+              <div className="flex flex-col items-end mt-2 pt-2 border-t border-pink-50">
+                 <div className="flex items-center gap-2 mb-2">
+                    <p className="text-xs font-bold text-indigo-500">🎁 Tặng thêm:</p>
+                    <div className="flex items-center gap-2">
+                       <button type="button" onClick={() => setGiftQuantity(Math.max(0, giftQuantity - 1))} className="w-6 h-6 rounded flex items-center justify-center bg-indigo-100 text-indigo-600 font-bold active:bg-indigo-200 transition">-</button>
+                       <span className="text-sm font-bold text-[#5C3D3D] w-4 text-center">{giftQuantity}</span>
+                       <button type="button" onClick={() => setGiftQuantity(giftQuantity + 1)} className="w-6 h-6 rounded flex items-center justify-center bg-indigo-100 text-indigo-600 font-bold active:bg-indigo-200 transition">+</button>
+                    </div>
+                    <p className="text-xs font-bold text-indigo-500">hũ</p>
+                 </div>
+                 {giftQuantity > 0 && (
                    <select 
                      value={selectedGiftFlavor} 
                      onChange={e => setSelectedGiftFlavor(e.target.value)} 
@@ -488,8 +500,8 @@ export default function OrdersTab() {
                        <option key={`gift-${f.id}`} value={f.id}>{f.name}</option>
                      ))}
                    </select>
-                 </div>
-              )}
+                 )}
+              </div>
               {formTotalJars >= 20 && (
                  <div className="text-right">
                    <p className="text-xs font-bold text-blue-500">🚚 Miễn phí giao hàng (Mua 20 hũ)</p>
